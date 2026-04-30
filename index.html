@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <title>Tier List</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <h1>Tier List</h1>
+        </div>
+        <div class="header-actions">
+          <button class="button button-secondary" id="reset-button" type="button">Сбросить</button>
+          <button class="button button-primary" id="share-button" type="button">Поделиться</button>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="Панель карточек">
+        <form class="add-form" id="add-form" autocomplete="off">
+          <label class="sr-only" for="item-title">Название карточки</label>
+          <input id="item-title" name="title" maxlength="80" placeholder="Название карточки">
+          <button class="button button-dark" type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <div class="status" id="status" role="status" aria-live="polite" hidden></div>
+
+      <section class="tier-board" id="tier-board" aria-label="Tier list"></section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

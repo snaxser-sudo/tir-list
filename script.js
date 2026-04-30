@@ -11,6 +11,7 @@
   var STORAGE_KEY = "tier-list-draft-v2";
   var DATA_KEY = "data";
   var MAX_TITLE_LENGTH = 500;
+  var MOBILE_BREAKPOINT = 720;
   var DEFAULT_ITEM_TITLE = "Без названия";
   var DEFAULT_LOWEST_PRIORITY_ITEMS = [
     "Соковыжималка в клиентских путях. Клиентский путь никогда не должен заканчиваться. Должны быть постоянно в продаже. Чтобы он не оканчивался после оплаты",
@@ -43,6 +44,7 @@
 
   var state = createInitialState();
   var dragItemId = null;
+  var moveSheetItemId = null;
   var statusTimer = 0;
 
   var board = document.getElementById("tier-board");
@@ -76,6 +78,29 @@
       }
 
       deleteItem(deleteButton.dataset.itemId);
+    });
+
+    board.addEventListener("click", function (event) {
+      var card = event.target.closest(".item-card");
+
+      if (!card || !isMobileLayout() || event.target.closest("[data-action='delete-item']")) {
+        return;
+      }
+
+      if (event.target.classList.contains("card-title") && !event.target.readOnly) {
+        return;
+      }
+
+      event.preventDefault();
+      openMoveSheet(card.dataset.itemId);
+    });
+
+    board.addEventListener("focusout", function (event) {
+      if (!event.target.classList.contains("card-title") || !isMobileLayout()) {
+        return;
+      }
+
+      event.target.readOnly = true;
     });
 
     board.addEventListener("change", function (event) {
@@ -157,6 +182,41 @@
       if (encoded) {
         loadStateFromUrl(encoded);
       }
+    });
+
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-move-target]");
+
+      if (!button) {
+        return;
+      }
+
+      moveItem(moveSheetItemId, button.dataset.moveTarget);
+      closeMoveSheet();
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest("[data-action='close-move-sheet']")) {
+        return;
+      }
+
+      closeMoveSheet();
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest("[data-action='edit-card-text']")) {
+        return;
+      }
+
+      enableMobileEditing(moveSheetItemId);
+      closeMoveSheet();
+    });
+
+    window.addEventListener("resize", function () {
+      if (!isMobileLayout()) {
+        closeMoveSheet();
+      }
+      updateCardEditMode();
     });
   }
 
@@ -429,12 +489,13 @@
     });
 
     resizeCardTextareas();
+    updateCardEditMode();
   }
 
   function renderItem(item) {
     var card = document.createElement("article");
     card.className = "item-card";
-    card.draggable = true;
+    card.draggable = !isMobileLayout();
     card.dataset.itemId = item.id;
 
     var textarea = document.createElement("textarea");
@@ -444,6 +505,7 @@
     textarea.rows = 1;
     textarea.value = item.title;
     textarea.setAttribute("aria-label", "Название карточки");
+    textarea.readOnly = isMobileLayout();
 
     var deleteButton = document.createElement("button");
     deleteButton.className = "delete-card";
@@ -459,6 +521,104 @@
     return card;
   }
 
+  function openMoveSheet(itemId) {
+    var foundItem = findItem(state, itemId);
+
+    if (!foundItem) {
+      return;
+    }
+
+    closeMoveSheet();
+    moveSheetItemId = itemId;
+
+    var sheet = document.createElement("div");
+    sheet.className = "move-sheet";
+    sheet.addEventListener("click", function (event) {
+      if (event.target === sheet) {
+        closeMoveSheet();
+      }
+    });
+
+    var panel = document.createElement("section");
+    panel.className = "move-panel";
+    panel.setAttribute("aria-label", "Переместить карточку");
+
+    var title = document.createElement("h2");
+    title.textContent = "Куда переместить?";
+
+    var itemTitle = document.createElement("p");
+    itemTitle.className = "move-item-title";
+    itemTitle.textContent = foundItem.item.title;
+
+    var actions = document.createElement("div");
+    actions.className = "move-actions";
+
+    state.tiers.forEach(function (tier) {
+      var button = document.createElement("button");
+      button.className = "move-option";
+      button.type = "button";
+      button.dataset.moveTarget = tier.id;
+      button.textContent = tier.title;
+
+      if (foundItem.tier.id === tier.id) {
+        button.disabled = true;
+      }
+
+      actions.appendChild(button);
+    });
+
+    var editButton = document.createElement("button");
+    editButton.className = "move-secondary";
+    editButton.type = "button";
+    editButton.dataset.action = "edit-card-text";
+    editButton.textContent = "Редактировать текст";
+
+    var closeButton = document.createElement("button");
+    closeButton.className = "move-secondary";
+    closeButton.type = "button";
+    closeButton.dataset.action = "close-move-sheet";
+    closeButton.textContent = "Отмена";
+
+    panel.appendChild(title);
+    panel.appendChild(itemTitle);
+    panel.appendChild(actions);
+    panel.appendChild(editButton);
+    panel.appendChild(closeButton);
+    sheet.appendChild(panel);
+    document.body.appendChild(sheet);
+  }
+
+  function closeMoveSheet() {
+    var sheet = document.querySelector(".move-sheet");
+
+    if (sheet) {
+      sheet.remove();
+    }
+
+    moveSheetItemId = null;
+  }
+
+  function enableMobileEditing(itemId) {
+    var textarea = board.querySelector(".card-title[data-item-id='" + cssEscape(itemId) + "']");
+
+    if (!textarea) {
+      return;
+    }
+
+    textarea.readOnly = false;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+
+  function updateCardEditMode() {
+    Array.prototype.forEach.call(board.querySelectorAll(".card-title"), function (textarea) {
+      textarea.readOnly = isMobileLayout();
+    });
+    Array.prototype.forEach.call(board.querySelectorAll(".item-card"), function (card) {
+      card.draggable = !isMobileLayout();
+    });
+  }
+
   function resizeCardTextareas() {
     Array.prototype.forEach.call(board.querySelectorAll(".card-title"), function (textarea) {
       resizeTextarea(textarea);
@@ -468,6 +628,10 @@
   function resizeTextarea(textarea) {
     textarea.style.height = "auto";
     textarea.style.height = textarea.scrollHeight + "px";
+  }
+
+  function isMobileLayout() {
+    return window.matchMedia("(max-width: " + MOBILE_BREAKPOINT + "px)").matches;
   }
 
   function encodeState(sourceState) {
@@ -741,6 +905,14 @@
     }
 
     return "item-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === "function") {
+      return window.CSS.escape(value);
+    }
+
+    return String(value).replace(/'/g, "\\'");
   }
 
   function clearDropHighlights(exceptZone) {

@@ -274,6 +274,10 @@ h1 {
   outline-offset: -3px;
 }
 
+.card-title[readonly] {
+  cursor: pointer;
+}
+
 .delete-card {
   display: grid;
   place-items: center;
@@ -302,6 +306,73 @@ h1 {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+}
+
+.move-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: flex-end;
+  padding: 12px;
+  background: rgba(22, 24, 23, 0.36);
+}
+
+.move-panel {
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  padding: 14px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(22, 24, 23, 0.24);
+}
+
+.move-panel h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.move-item-title {
+  max-height: 92px;
+  overflow: auto;
+  margin: 8px 0 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.move-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.move-option,
+.move-secondary {
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-weight: 800;
+}
+
+.move-option {
+  border: 1px solid var(--line-strong);
+  background: #f9fbfa;
+  color: var(--text);
+  text-align: left;
+}
+
+.move-option:disabled {
+  color: #8b928f;
+  background: #eef1ef;
+  cursor: default;
+}
+
+.move-secondary {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
 }
 
 @media (max-width: 720px) {
@@ -346,5 +417,10 @@ h1 {
 
   .item-card {
     width: 100%;
+    cursor: pointer;
+  }
+
+  .move-sheet {
+    display: flex;
   }
 }

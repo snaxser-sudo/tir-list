@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
     <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
-    <title>Tier List</title>
+    <title>Приоритеты</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <h1>Tier List</h1>
+          <h1>Приоритеты на Q2</h1>
         </div>
         <div class="header-actions">
           <button class="button button-secondary" id="reset-button" type="button">Сбросить</button>
@@ -20,10 +20,14 @@
         </div>
       </header>
 
+      <section class="hero-illustration" aria-label="Иллюстрация">
+        <img src="hero.png" alt="" loading="eager">
+      </section>
+
       <section class="toolbar" aria-label="Панель карточек">
         <form class="add-form" id="add-form" autocomplete="off">
           <label class="sr-only" for="item-title">Название карточки</label>
-          <input id="item-title" name="title" maxlength="500" placeholder="Название карточки">
+          <input id="item-title" name="title" maxlength="500" placeholder="Что добавляем в список?">
           <button class="button button-dark" type="submit">Добавить</button>
         </form>
       </section>

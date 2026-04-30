@@ -196,13 +196,24 @@
 
     document.addEventListener("click", function (event) {
       var button = event.target.closest("[data-move-target]");
+      var moved;
 
       if (!button) {
         return;
       }
 
-      moveItem(moveSheetItemId, button.dataset.moveTarget);
-      closeMoveSheet();
+      moved = moveItem(moveSheetItemId, button.dataset.moveTarget);
+      if (moved) {
+        closeMoveSheet();
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest("[data-action='close-feedback-dialog']")) {
+        return;
+      }
+
+      closeFeedbackDialog();
     });
 
     document.addEventListener("click", function (event) {
@@ -223,9 +234,6 @@
     });
 
     window.addEventListener("resize", function () {
-      if (!isMobileLayout()) {
-        closeMoveSheet();
-      }
       updateCardEditMode();
     });
   }
@@ -310,16 +318,16 @@
 
   function moveItem(itemId, targetTierId) {
     if (!itemId || !targetTierId) {
-      return;
+      return false;
     }
 
     var currentItem = findItem(state, itemId);
     if (!currentItem) {
-      return;
+      return false;
     }
 
     if (currentItem.tier.id === targetTierId) {
-      return;
+      return true;
     }
 
     var nextState = cloneState(state);
@@ -327,15 +335,18 @@
     var targetTier = getTier(nextState, targetTierId);
 
     if (!nextItem || !targetTier) {
-      return;
+      return false;
     }
 
     var item = nextItem.tier.items.splice(nextItem.index, 1)[0];
     targetTier.items.push(item);
 
-    if (commitState(nextState, { clearShareHash: true })) {
+    if (commitState(nextState, { clearShareHash: true, popupOnError: true })) {
       showStatus("Карточка перемещена");
+      return true;
     }
+
+    return false;
   }
 
   function resetTierList() {
@@ -349,6 +360,22 @@
     var encoded = encodeState(state);
     var shareUrl = writeShareHash(encoded);
 
+    if (navigator.share && isMobileLayout()) {
+      navigator.share({
+        title: "Приоритеты на Q2",
+        url: shareUrl
+      }).then(function () {
+        showStatus("Ссылка отправлена");
+      }, function () {
+        copyShareUrl(shareUrl);
+      });
+      return;
+    }
+
+    copyShareUrl(shareUrl);
+  }
+
+  function copyShareUrl(shareUrl) {
     copyText(shareUrl).then(function (copied) {
       showStatus(copied ? "Ссылка скопирована" : "Ссылка создана в адресной строке");
     });
@@ -371,6 +398,9 @@
     if (!validation.ok) {
       if (!settings.silent) {
         showStatus(validation.message, "error");
+        if (settings.popupOnError) {
+          showFeedbackDialog(validation.message);
+        }
       }
       return false;
     }
@@ -606,6 +636,48 @@
     document.body.appendChild(sheet);
   }
 
+  function showFeedbackDialog(message) {
+    var dialog = document.createElement("div");
+    var panel = document.createElement("section");
+    var title = document.createElement("h2");
+    var text = document.createElement("p");
+    var button = document.createElement("button");
+
+    closeFeedbackDialog();
+
+    dialog.className = "feedback-dialog";
+    dialog.addEventListener("click", function (event) {
+      if (event.target === dialog) {
+        closeFeedbackDialog();
+      }
+    });
+
+    panel.className = "feedback-panel";
+    panel.setAttribute("aria-label", "Сообщение");
+
+    title.textContent = "Не получится переместить";
+    text.textContent = message;
+
+    button.className = "feedback-button";
+    button.type = "button";
+    button.dataset.action = "close-feedback-dialog";
+    button.textContent = "Понятно";
+
+    panel.appendChild(title);
+    panel.appendChild(text);
+    panel.appendChild(button);
+    dialog.appendChild(panel);
+    document.body.appendChild(dialog);
+  }
+
+  function closeFeedbackDialog() {
+    var dialog = document.querySelector(".feedback-dialog");
+
+    if (dialog) {
+      dialog.remove();
+    }
+  }
+
   function closeMoveSheet() {
     var sheet = document.querySelector(".move-sheet");
 
@@ -820,8 +892,11 @@
     textarea.style.position = "fixed";
     textarea.style.left = "-999px";
     textarea.style.top = "0";
+    textarea.style.fontSize = "16px";
     document.body.appendChild(textarea);
+    textarea.focus();
     textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
 
     try {
       return document.execCommand("copy");

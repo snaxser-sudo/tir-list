@@ -374,14 +374,15 @@ h1 {
   position: fixed;
   inset: 0;
   z-index: 20;
-  display: none;
-  align-items: flex-end;
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
   background: rgba(17, 13, 70, 0.42);
 }
 
 .move-panel {
-  width: 100%;
+  width: min(460px, 100%);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.72);
   padding: 16px;
@@ -435,6 +436,46 @@ h1 {
   border: 1px solid var(--line-strong);
   background: #fff;
   color: var(--navy);
+}
+
+.feedback-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 13, 70, 0.48);
+}
+
+.feedback-panel {
+  width: min(420px, 100%);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 22px 60px rgba(17, 13, 70, 0.32);
+}
+
+.feedback-panel h2 {
+  margin: 0 0 8px;
+  font-size: 1.12rem;
+}
+
+.feedback-panel p {
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+.feedback-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 900;
 }
 
 @media (max-width: 720px) {
@@ -500,6 +541,11 @@ h1 {
   }
 
   .move-sheet {
-    display: flex;
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .move-panel {
+    width: 100%;
   }
 }

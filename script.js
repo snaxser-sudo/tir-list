@@ -2,17 +2,44 @@
   "use strict";
 
   var TIER_DEFS = [
-    { id: "S", title: "S", limit: 1 },
-    { id: "A", title: "A", limit: 3 },
-    { id: "B", title: "B", limit: null },
-    { id: "C", title: "C", limit: null },
-    { id: "D", title: "D", limit: null }
+    { id: "S", title: "Основной фокус", limit: 1 },
+    { id: "A", title: "Делаем следом", limit: 3 },
+    { id: "B", title: "Стоит не забыть", limit: null },
+    { id: "C", title: "Делаем в последнюю очередь", limit: null }
   ];
 
-  var STORAGE_KEY = "tier-list-draft-v1";
+  var STORAGE_KEY = "tier-list-draft-v2";
   var DATA_KEY = "data";
-  var MAX_TITLE_LENGTH = 80;
+  var MAX_TITLE_LENGTH = 500;
   var DEFAULT_ITEM_TITLE = "Без названия";
+  var DEFAULT_LOWEST_PRIORITY_ITEMS = [
+    "Соковыжималка в клиентских путях. Клиентский путь никогда не должен заканчиваться. Должны быть постоянно в продаже. Чтобы он не оканчивался после оплаты",
+    "Методология сравнения нас с Яндексом, но глазами пользователя. Где у него больше предложение из тех объектов размещения, чем он готов воспользоваться.",
+    "Лучше авиацентра, лучше авиасейлс",
+    "Забрать кусок оффлайна. Гипотеза - через офисы Альфы",
+    "Половина тревел-кошелька",
+    "Списание денег напрямую со счёта в АТ. Решается в основном через Альфу. - это не надо. стоит еще поговорить с Алиной и оценить целесообразность",
+    "Стать на голову лучше, чем конкуренты в поддержке",
+    "Управление пассажирами и попутчиками, очень нужно для Альфа Тревела",
+    "Выступления на конференциях по ИИ",
+    "Каждому пассажиру - отель",
+    "Качество поиска повысить",
+    "Авиа - ответственные заказчики у команды отелей",
+    "Наша поддержка - супер-крутое преимущество, которое можно продавать",
+    "Конкретный тур вместе с CRM предлагать людям",
+    "Партнёрство с Билайн",
+    "Публикации в Хабре и технологических сообщетсвах",
+    "Взять в управление ОКР по активной клиентской базе: количество клиентов с двумя и тремя продуктами, проникноверие продаж отелей в пассажиров",
+    "Подключение новых поставщиков за 1-2 месяца",
+    "Как мы внедряемся в клиентские пути наших пассажиров",
+    "Защита от хакерских атак/взлома",
+    "Настроить работу с Альфа Тревелом: что делается у нас, что делается на стороне банка",
+    "Подключить Хотелбук, Авиацентр, Академ Серис, Lebel Travel, MTK",
+    "Стандарт рабочего места LLM у наших сотрудников. Разработано рабочее место и установлено",
+    "Продающий КЦ",
+    "Сделать классное ранжирование",
+    "Онбординг и экран поездки."
+  ];
 
   var state = createInitialState();
   var dragItemId = null;
@@ -59,15 +86,17 @@
       renameItem(event.target.dataset.itemId, event.target.value);
     });
 
-    board.addEventListener("keydown", function (event) {
+    board.addEventListener("input", function (event) {
       if (!event.target.classList.contains("card-title")) {
         return;
       }
 
-      if (event.key === "Enter") {
-        event.preventDefault();
-        event.target.blur();
-      }
+      resizeTextarea(event.target);
+      renameItem(event.target.dataset.itemId, event.target.value, {
+        clearShareHash: true,
+        silent: true,
+        skipRender: true
+      });
     });
 
     board.addEventListener("dragstart", function (event) {
@@ -166,7 +195,7 @@
   function addItem(rawTitle) {
     var title = normalizeTitle(rawTitle);
     var nextState = cloneState(state);
-    var targetTier = getTier(nextState, "D");
+    var targetTier = getTier(nextState, "C");
 
     targetTier.items.push({
       id: createId(),
@@ -180,7 +209,8 @@
     }
   }
 
-  function renameItem(itemId, rawTitle) {
+  function renameItem(itemId, rawTitle, options) {
+    var settings = options || { clearShareHash: true };
     var nextState = cloneState(state);
     var foundItem = findItem(nextState, itemId);
 
@@ -189,7 +219,7 @@
     }
 
     foundItem.item.title = normalizeTitle(rawTitle);
-    if (commitState(nextState, { clearShareHash: true })) {
+    if (commitState(nextState, settings) && !settings.silent) {
       showStatus("Карточка переименована");
     }
   }
@@ -281,7 +311,9 @@
       clearShareHash();
     }
 
-    render();
+    if (!settings.skipRender) {
+      render();
+    }
 
     if (settings.persist !== false) {
       saveDraft();
@@ -305,6 +337,13 @@
         var incomingItems = incomingTier && Array.isArray(incomingTier.items)
           ? incomingTier.items
           : [];
+        var legacyD = inputState.tiers.find(function (tier) {
+          return tier && tier.id === "D";
+        });
+
+        if (definition.id === "C" && legacyD && Array.isArray(legacyD.items)) {
+          incomingItems = incomingItems.concat(legacyD.items);
+        }
 
         return {
           id: definition.id,
@@ -388,6 +427,8 @@
       row.appendChild(zone);
       board.appendChild(row);
     });
+
+    resizeCardTextareas();
   }
 
   function renderItem(item) {
@@ -396,12 +437,13 @@
     card.draggable = true;
     card.dataset.itemId = item.id;
 
-    var input = document.createElement("input");
-    input.className = "card-title";
-    input.dataset.itemId = item.id;
-    input.maxLength = MAX_TITLE_LENGTH;
-    input.value = item.title;
-    input.setAttribute("aria-label", "Название карточки");
+    var textarea = document.createElement("textarea");
+    textarea.className = "card-title";
+    textarea.dataset.itemId = item.id;
+    textarea.maxLength = MAX_TITLE_LENGTH;
+    textarea.rows = 1;
+    textarea.value = item.title;
+    textarea.setAttribute("aria-label", "Название карточки");
 
     var deleteButton = document.createElement("button");
     deleteButton.className = "delete-card";
@@ -411,10 +453,21 @@
     deleteButton.setAttribute("aria-label", "Удалить карточку");
     deleteButton.textContent = "×";
 
-    card.appendChild(input);
+    card.appendChild(textarea);
     card.appendChild(deleteButton);
 
     return card;
+  }
+
+  function resizeCardTextareas() {
+    Array.prototype.forEach.call(board.querySelectorAll(".card-title"), function (textarea) {
+      resizeTextarea(textarea);
+    });
+  }
+
+  function resizeTextarea(textarea) {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
   }
 
   function encodeState(sourceState) {
@@ -456,6 +509,13 @@
           return Array.isArray(entry) && entry[0] === definition.id;
         });
         var titles = packedTier && Array.isArray(packedTier[1]) ? packedTier[1] : [];
+        var legacyD = payload.t.find(function (entry) {
+          return Array.isArray(entry) && entry[0] === "D";
+        });
+
+        if (definition.id === "C" && legacyD && Array.isArray(legacyD[1])) {
+          titles = titles.concat(legacyD[1]);
+        }
 
         return {
           id: definition.id,
@@ -597,10 +657,19 @@
           id: definition.id,
           title: definition.title,
           limit: definition.limit,
-          items: []
+          items: definition.id === "C" ? createDefaultItems() : []
         };
       })
     };
+  }
+
+  function createDefaultItems() {
+    return DEFAULT_LOWEST_PRIORITY_ITEMS.map(function (title) {
+      return {
+        id: createId(),
+        title: normalizeTitle(title)
+      };
+    });
   }
 
   function cloneState(sourceState) {
@@ -641,7 +710,7 @@
   }
 
   function getLimitMessage(tier) {
-    return "WIP-лимит уровня " + tier.id + ": максимум " + tier.limit + " " + getCardWord(tier.limit);
+    return "WIP-лимит уровня " + tier.title + ": максимум " + tier.limit + " " + getCardWord(tier.limit);
   }
 
   function getCardWord(count) {

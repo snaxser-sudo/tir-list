@@ -253,11 +253,12 @@ h1 {
 }
 
 .card-title {
+  grid-column: 1 / -1;
   width: 100%;
   min-width: 0;
   min-height: 44px;
   border: 0;
-  border-radius: var(--radius) 0 0 var(--radius);
+  border-radius: var(--radius) var(--radius) 0 0;
   padding: 11px 10px;
   background: transparent;
   color: var(--text);
@@ -291,6 +292,25 @@ h1 {
   color: #6b2925;
   font-size: 1.1rem;
   font-weight: 900;
+}
+
+.move-card {
+  min-height: 34px;
+  border: 0;
+  border-top: 1px solid #eef1ef;
+  border-radius: 0 0 0 var(--radius);
+  padding: 0 10px;
+  background: #f8faf9;
+  color: #155a60;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: left;
+}
+
+.move-card:hover,
+.move-card:focus-visible {
+  background: #edf8f7;
+  outline: none;
 }
 
 .delete-card:hover,

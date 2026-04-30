@@ -81,9 +81,19 @@
     });
 
     board.addEventListener("click", function (event) {
+      var moveButton = event.target.closest("[data-action='move-item']");
+      if (!moveButton) {
+        return;
+      }
+
+      event.preventDefault();
+      openMoveSheet(moveButton.dataset.itemId);
+    });
+
+    board.addEventListener("click", function (event) {
       var card = event.target.closest(".item-card");
 
-      if (!card || !isMobileLayout() || event.target.closest("[data-action='delete-item']")) {
+      if (!card || !isMobileLayout() || event.target.closest("button")) {
         return;
       }
 
@@ -515,7 +525,15 @@
     deleteButton.setAttribute("aria-label", "Удалить карточку");
     deleteButton.textContent = "×";
 
+    var moveButton = document.createElement("button");
+    moveButton.className = "move-card";
+    moveButton.type = "button";
+    moveButton.dataset.action = "move-item";
+    moveButton.dataset.itemId = item.id;
+    moveButton.textContent = "Переместить";
+
     card.appendChild(textarea);
+    card.appendChild(moveButton);
     card.appendChild(deleteButton);
 
     return card;
